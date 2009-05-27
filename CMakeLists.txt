@@ -6,6 +6,7 @@ SET(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${F2F_PATH}/CMakeModules")
 
 SET(SRC "${F2F_PATH}/src")
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${F2F_PATH}/bin")
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${F2F_PATH}/lib")
 
 # on linux x86-64 set this to OFF if you are having (-fPIC...) build problems.
 # then: cd build/ && rm -rf CMakeCache.txt CMakeFiles/ cmake_install.cmake resolvers/
