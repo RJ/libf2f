@@ -6,21 +6,26 @@
 #include <boost/thread.hpp>
 #include <boost/foreach.hpp>
 
+// How we typically prep a new connection object:
+#define NEWCONN new Connection(m_acceptor.io_service(), \
+                boost::bind( &Router::message_received, this, _1, _2 ), \
+                boost::bind( &Router::unregister_connection, this, _1) )
+
+namespace libf2f {
+
 using namespace std;
 
 Router::Router( boost::asio::ip::tcp::acceptor& acc, Protocol * p )
     : m_acceptor( acc ), m_protocol( p ), seen_connections(0)
 {
+    p->set_router( this );
     // Start an accept operation for a new connection.
-    connection_ptr new_conn(new Connection(m_acceptor.io_service(), boost::bind( &Router::message_received, this, _1, _2 )));
+    connection_ptr new_conn(NEWCONN);
     
     m_acceptor.async_accept(new_conn->socket(),
         boost::bind(&Router::handle_accept, this,
         boost::asio::placeholders::error, new_conn));
-    
-    // start thread that dispatches outoing msgs:
-    m_dispatch_thread = boost::thread(boost::bind(
-                        &Router::message_dispatch_runner, this));
+
 }
 
 /// Handle completion of a accept operation.
@@ -42,23 +47,70 @@ Router::handle_accept(const boost::system::error_code& e, connection_ptr conn)
     }
     else
     {
-        m_connections.push_back( conn );
+        register_connection( conn );
         conn->async_read();
     }
     
     // Start an accept operation for a new connection.
-    connection_ptr new_conn(new Connection(m_acceptor.io_service(), boost::bind( &Router::message_received, this, _1, _2 )));
+    connection_ptr new_conn(NEWCONN);
     
     m_acceptor.async_accept(new_conn->socket(),
         boost::bind(&Router::handle_accept, this,
             boost::asio::placeholders::error, new_conn));
 }
 
+void
+Router::register_connection( connection_ptr conn )
+{
+    boost::mutex::scoped_lock lk(m_connections_mutex);
+    vector<connection_ptr>::iterator it;
+    for( it=m_connections.begin() ; it < m_connections.end() ; ++it )
+    {
+        if( *it == conn )
+        {
+            // already registered, wtf?
+            cout << "ERROR connection already registered!" << endl;
+            assert(false);
+            return;
+        }
+    }
+    m_connections.push_back( conn );
+    connections_str();
+}
+
+void
+Router::unregister_connection( connection_ptr conn )
+{
+    boost::mutex::scoped_lock lk(m_connections_mutex);
+    vector<connection_ptr>::iterator it;
+    for( it=m_connections.begin() ; it < m_connections.end() ; ++it )
+    {
+        if( *it == conn )
+        {
+            m_connections.erase( it );
+            cout << "Router::unregistered " << conn->str() << endl;
+        }
+    }
+    connections_str();
+}
+
+void
+Router::connections_str()
+{
+    cout << "<connections>" << endl;
+    BOOST_FOREACH( connection_ptr conn, m_connections )
+    {
+        cout << conn->str() << endl;
+    }
+    cout << "</connections>" << endl;
+}
+
 /// this is the default msg recvd callback passed to new connections:
 void
 Router::message_received( message_ptr msgp, connection_ptr conn )
 {
-    cout << "router::message_received from " << conn->str() << endl;
+    cout << "router::message_received from " << conn->str() 
+         << " " << msgp->str() << endl;
     if( msgp->hops() > 3 )
     {
         cout << "Dropping, hop count: " << msgp->hops() << endl;
@@ -73,6 +125,7 @@ Router::message_received( message_ptr msgp, connection_ptr conn )
     // handle ping
     if( msgp->type() == PING )
     {
+        cout << "got PING, responding.." << endl;
         conn->async_write( PongMessage::factory() );
         return;
     }
@@ -93,7 +146,7 @@ Router::connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint)
 {
     cout << "connect_to_remote(" << endpoint.address().to_string()<<","
          << endpoint.port()<<")" << endl;
-    connection_ptr new_conn(new Connection(m_acceptor.io_service(), boost::bind( &Router::message_received, this, _1, _2 )));
+    connection_ptr new_conn(NEWCONN);
     // Start an asynchronous connect operation.
     new_conn->socket().async_connect(endpoint,
         boost::bind(&Router::handle_connect, this,
@@ -114,59 +167,20 @@ Router::handle_connect( const boost::system::error_code& e,
     }
     /// Successfully established connection. 
     m_protocol->new_outgoing_connection( conn );
+    register_connection( conn );
     conn->async_read(); // start read loop for this connection
 }
 
-/// runs in a thread- dispatches outbound messages
-/// TODO flow control algorithm, stats collection.
+/// apply fun to all connections
 void 
-Router::message_dispatch_runner()
+Router::foreach_conns( boost::function<void(connection_ptr)> fun )
 {
-    boost::asio::deadline_timer timer( m_acceptor.get_io_service() );
-    std::deque< message_ptr > msgs;
-    size_t num;
-    while(true)
+    boost::mutex::scoped_lock lk(m_connections_mutex);
+    BOOST_FOREACH( connection_ptr conn, m_connections )
     {
-        BOOST_FOREACH( connection_ptr conn, m_connections )
-        {
-            if( (num = conn->drain_writeq( msgs )) )
-            {
-                cout << "Sending " << num << " msgs on " << conn->str() << endl;
-                BOOST_FOREACH( message_ptr mp, msgs )
-                {
-                    cout << "Sending:" << mp->str() << endl;
-                    //boost::asio::async_write(   conn->socket(),
-                    //                            mp->to_buffers(),
-                    //                            0 );
-                }
-                msgs.clear();
-            }
-        }
-        
-        // wait until next time slice:
-        timer.expires_from_now( boost::posix_time::milliseconds(1000) );
-        timer.wait();
+        fun( conn );
     }
 }
 
-//void
-//Router::write_complete( const boost::system::error_code& e, message_ptr msgp )
-//{
-//
-//}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+} //ns

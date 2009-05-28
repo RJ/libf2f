@@ -1,6 +1,13 @@
 #include "libf2f/protocol.h"
 
+namespace libf2f {
+
 using namespace std;
+
+Protocol::Protocol()
+{
+    cout << "CTOR Protocol" << endl;
+}
 
 bool
 Protocol::new_incoming_connection( connection_ptr conn )
@@ -26,3 +33,5 @@ Protocol::message_received( message_ptr msgp, connection_ptr conn )
     cout << "Protocol::message_received " << conn->str() << endl 
          << msgp->str() << endl;
 }
+
+} //ns

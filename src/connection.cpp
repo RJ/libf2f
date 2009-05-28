@@ -1,10 +1,16 @@
 #include "libf2f/connection.h"
 #include <boost/foreach.hpp>
 
+namespace libf2f {
+
+using namespace std;
+
 Connection::Connection( boost::asio::io_service& io_service, 
-            boost::function< void(message_ptr, connection_ptr) > cb )
-    : m_socket(io_service), m_authed(false),
-        m_message_received_cb(cb)
+            boost::function< void(message_ptr, connection_ptr) > msg_cb,
+            boost::function< void(connection_ptr) > fin_cb )
+    : m_socket(io_service), m_authed(false), m_sending(false),
+      m_message_received_cb(msg_cb),
+      m_fin_cb(fin_cb)
 {
     std::cout << "CTOR connection" << std::endl;
     max_writeq_size = 20*1024; // 20kb
@@ -25,6 +31,7 @@ void
 Connection::fin()
 {
     std::cout << "FIN connection " << str() << std::endl;
+    m_fin_cb( shared_from_this() );
     close();
 }
 
@@ -43,8 +50,13 @@ Connection::async_write(message_ptr msg)
         m_writeq.push_back(msg);
         m_writeq_size += sizeof(message_header) + msg->length();
     }
+    // make sure our sending loop is running:
+    boost::system::error_code e;
+    do_async_write( e, message_ptr() );
 }
 
+/// Reading incoming messages is a chain of 3 async methods:
+/// async_read() -> handle_read_headers() -> handle_read_data()
 void 
 Connection::async_read()
 {
@@ -59,7 +71,7 @@ Connection::async_read()
                                         msgp
                                         ));
 }
-
+/// called when we've read the header off the wire
 void 
 Connection::handle_read_header(const boost::system::error_code& e, message_ptr msgp)
 {
@@ -91,7 +103,7 @@ Connection::handle_read_header(const boost::system::error_code& e, message_ptr m
                                         ));
     
 }
-
+/// called when we've read header and payload off the wire
 void 
 Connection::handle_read_data(const boost::system::error_code& e, message_ptr msgp)
 {
@@ -112,7 +124,7 @@ Connection::set_message_received_cb( boost::function< void(message_ptr, connecti
 {
     m_message_received_cb = cb;
 }
-
+/// unused atm.. todo flow control?
 size_t
 Connection::drain_writeq( std::deque< message_ptr > & out )
 {
@@ -136,4 +148,40 @@ Connection::str() const
             << "]";
     return os.str();
 }
+
+/// Calls to do_async_write are chained - it will call itself when a write
+/// completes, to send the next msg in the queue. Bails when none left.
+void 
+Connection::do_async_write(const boost::system::error_code& e, message_ptr finished_msg)
+{
+    message_ptr msgp;
+    { // mutex scope
+        boost::mutex::scoped_lock lk(m_mutex);
+        if(m_sending && !finished_msg)
+        {
+            // this call is telling us to send, but we already are.
+            //cout << "bailing from do_async_write - already sending (sending=true)" << endl;
+            return;
+        }
+        
+        if(m_writeq.empty())
+        {
+            //cout << "bailing from do_async_write, q empty (sending=false)" << endl;
+            m_sending = false;
+            return;
+        }
+        
+        msgp = m_writeq.front();
+        m_writeq.pop_front();
+        m_writeq_size -= (sizeof(message_header) + msgp->length());
+        m_sending = true;
+    } // mutex scope
+    
+    boost::asio::async_write( socket(), msgp->to_buffers(),
+                              boost::bind( &Connection::do_async_write, this,
+                                           boost::asio::placeholders::error,
+                                           msgp ) );
+}
+
+} //ns
 

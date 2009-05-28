@@ -10,6 +10,7 @@
 #include "libf2f/protocol.h"
 
 using namespace std;
+using namespace libf2f;
 
 void iorun( boost::asio::io_service * ios )
 {
@@ -61,6 +62,12 @@ int main(int argc, char **argv)
             short rp = atoi(parts[2].c_str());
             boost::asio::ip::tcp::endpoint ep(ipaddr, rp);
             r.connect_to_remote( ep );
+        }
+        
+        if(parts[0] == "pingall")
+        {
+            message_ptr ping = PingMessage::factory();
+            r.foreach_conns( boost::bind(&Connection::async_write, _1, ping) );
         }
     }
 

@@ -11,6 +11,8 @@
 #include "libf2f/message.h"
 #include "libf2f/connection.h"
 
+namespace libf2f {
+
 class Protocol;
 
 
@@ -43,13 +45,18 @@ public:
     /// Default message recvd callback
     void message_received( message_ptr msgp, connection_ptr conn );
     
-    /// Run in a thread, does the flow-control and sends messages
-    void message_dispatch_runner();
-    
+    /// apply function to all registered connections
+    void foreach_conns( boost::function<void(connection_ptr)> );
     
 private:
+    /// Router keeps track of connections:
+    void register_connection( connection_ptr conn );
+    void unregister_connection( connection_ptr conn );
+    void connections_str();
+    
     /// all connections:
     std::vector< connection_ptr > m_connections;
+    boost::mutex m_connections_mutex; // protects connections
     
     /// The acceptor object used to accept incoming socket connections.
     boost::asio::ip::tcp::acceptor & m_acceptor;
@@ -62,6 +69,6 @@ private:
     unsigned int seen_connections; // num incoming connections accepted
 };
 
-
+} //ns
 
 #endif

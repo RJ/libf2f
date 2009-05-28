@@ -20,6 +20,8 @@
 #define SIDCANCEL        8
 #define BYE              9
 
+namespace libf2f {
+
 class Message;
 typedef boost::shared_ptr<Message> message_ptr;
 
@@ -70,23 +72,27 @@ public:
     {}
 
     Message(const message_header& header)
+        : m_payload(0)
     {
         m_header = header;
         m_guid = std::string(header.guid, 36);
-        std::cout << "CTOR Msg(" << m_guid << ")" << std::endl;
+        //std::cout << "CTOR Msg(" << m_guid << ")" << std::endl;
     }
     
     virtual ~Message()
     {
-        std::cout << "DTOR Msg(" << m_guid << ")" << std::endl;
-        free(m_payload);
+        //std::cout << "DTOR Msg(" << m_guid << ")" << std::endl;
+        if(m_payload) free(m_payload);
     }
     
     virtual const std::string str() const
     {
         std::ostringstream os;
-        os  << "[Msg type:" << type() << " ttl:" << ttl() << " hops:" << hops()
-            << " length:" << length() << " guid:" << guid() << "]";
+        os  << "[Msg type:" << (int)type() 
+            << " ttl:" << (int)ttl() 
+            << " hops:" << (int)hops()
+            << " length:" << (int)length() 
+            << " guid:" << guid() << "]";
         return os.str();
     }
     
@@ -190,5 +196,5 @@ private:
     mutable std::string m_sid;
 };
 
-
+}
 #endif

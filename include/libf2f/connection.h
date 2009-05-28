@@ -15,6 +15,8 @@
 
 #include "libf2f/message.h"
 
+namespace libf2f {
+
 class Connection;
 typedef boost::shared_ptr<Connection> connection_ptr;
 
@@ -27,7 +29,8 @@ class Connection
 public:
 
     Connection( boost::asio::io_service& io_service, 
-                boost::function< void(message_ptr, connection_ptr) > cb );
+                boost::function< void(message_ptr, connection_ptr) > msg_cb,
+                boost::function< void(connection_ptr) > fin_cb );
     
     ~Connection();
     
@@ -39,9 +42,10 @@ public:
     boost::asio::ip::tcp::socket& socket();
     
     /// Asynchronously write a data structure to the socket.
-    /// This just enqueues the data, the router's flow-control algo
-    /// decides when/if to send it.
+    /// This just enqueues the data and returns immediately
     void async_write(message_ptr msg);
+    /// this is called internally to do actual sending:
+    void do_async_write(const boost::system::error_code& e, message_ptr finished_msg);
     
     /// Setup a call to read the next msg_header
     void async_read();
@@ -71,11 +75,14 @@ private:
     /// Stateful stuff the protocol handler/servent will set:
     std::string m_username; // username of user at end of Connection
     bool m_authed;
+    bool m_sending;
     
-    //Router * m_router;
+    
     boost::function< void(message_ptr, connection_ptr) > m_message_received_cb;
+    boost::function< void(connection_ptr) > m_fin_cb; // call when we die.
     
 };
 
+} //ns
 
 #endif 
