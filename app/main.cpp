@@ -4,13 +4,15 @@
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/algorithm/string.hpp>
-
+#include "boost/lambda/lambda.hpp"
+#include <boost/lambda/if.hpp>
 
 #include "libf2f/router.h"
 #include "libf2f/protocol.h"
 
 using namespace std;
 using namespace libf2f;
+
 
 void iorun( boost::asio::io_service * ios )
 {
@@ -31,13 +33,14 @@ int main(int argc, char **argv)
     Protocol p;
     short port = atoi(argv[1]);
     cout << "Listening on port " << port << endl;
-    boost::asio::ip::tcp::acceptor acc(
-        ios, 
-        boost::asio::ip::tcp::endpoint(
-            boost::asio::ip::tcp::v4(), 
-            port) 
+    boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp( 
+        new boost::asio::ip::tcp::acceptor
+            (ios, boost::asio::ip::tcp::endpoint(
+                            boost::asio::ip::tcp::v4(), 
+                            port)
+            ) 
     );
-    Router r(acc, &p);
+    Router r(accp, &p);
     
     boost::thread t( boost::bind(&iorun, &ios) );
     
@@ -66,12 +69,20 @@ int main(int argc, char **argv)
         
         if(parts[0] == "pingall")
         {
-            message_ptr ping = PingMessage::factory();
-            r.foreach_conns( boost::bind(&Connection::async_write, _1, ping) );
+            message_ptr ping = message_ptr(new PingMessage());
+            r.send_all(ping);
         }
+        
+        if(parts[0] == "query" && parts.size() == 2)
+        {
+            message_ptr search = message_ptr(new GeneralMessage(QUERY, parts[1]) );
+            r.send_all(search);
+        }
+        
+        if(parts[0] == "quit") break;
     }
 
-    ios.stop();
+    r.stop();
     t.join();
     return 0;
 }

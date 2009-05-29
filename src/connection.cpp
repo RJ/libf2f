@@ -8,11 +8,12 @@ using namespace std;
 Connection::Connection( boost::asio::io_service& io_service, 
             boost::function< void(message_ptr, connection_ptr) > msg_cb,
             boost::function< void(connection_ptr) > fin_cb )
-    : m_socket(io_service), m_authed(false), m_sending(false),
-      m_message_received_cb(msg_cb),
-      m_fin_cb(fin_cb)
+    : m_socket(io_service), m_sending(false),
+      m_fin_cb(fin_cb),
+      m_shuttingdown(false)
 {
     std::cout << "CTOR connection" << std::endl;
+    push_message_received_cb( msg_cb );
     max_writeq_size = 20*1024; // 20kb
 }
 
@@ -30,6 +31,7 @@ Connection::close()
 void 
 Connection::fin()
 {
+    m_shuttingdown = true;
     std::cout << "FIN connection " << str() << std::endl;
     m_fin_cb( shared_from_this() );
     close();
@@ -60,6 +62,7 @@ Connection::async_write(message_ptr msg)
 void 
 Connection::async_read()
 {
+    if( m_shuttingdown ) return;
     message_ptr msgp(new Message());
     // Read exactly the number of bytes in a header
     boost::asio::async_read(m_socket, 
@@ -76,6 +79,7 @@ void
 Connection::handle_read_header(const boost::system::error_code& e, message_ptr msgp)
 {
     //cout << "handle_read_header" << endl;
+    if( m_shuttingdown ) return;
     if (e)
     {
         std::cerr << "err" << std::endl;
@@ -107,23 +111,37 @@ Connection::handle_read_header(const boost::system::error_code& e, message_ptr m
 void 
 Connection::handle_read_data(const boost::system::error_code& e, message_ptr msgp)
 {
+    if( m_shuttingdown ) return;
     if (e)
     {
         std::cerr << "errrrrrr" << std::endl;
         fin();
         return;
     }
-    // inform router that we received a new message
-    m_message_received_cb( msgp, shared_from_this() );
+    // report that we received a new message
+    {
+        boost::mutex::scoped_lock lk(m_message_received_cb_mutex);
+        m_message_received_cbs.back()( msgp, shared_from_this() );
+    }
     // setup recv for next message:
     async_read();
 }
 
+
 void 
-Connection::set_message_received_cb( boost::function< void(message_ptr, connection_ptr) > cb )
+Connection::push_message_received_cb( boost::function< void(message_ptr, connection_ptr) > cb )
 {
-    m_message_received_cb = cb;
+    boost::mutex::scoped_lock lk(m_message_received_cb_mutex);
+    m_message_received_cbs.push_back(cb);
 }
+
+void 
+Connection::pop_message_received_cb()
+{
+    boost::mutex::scoped_lock lk(m_message_received_cb_mutex);
+    m_message_received_cbs.pop_back();
+}
+
 /// unused atm.. todo flow control?
 size_t
 Connection::drain_writeq( std::deque< message_ptr > & out )
@@ -145,6 +163,8 @@ Connection::str() const
     std::ostringstream os;
     os   << "[Connection:"
             << m_socket.remote_endpoint().address().to_string()
+            << ":"
+            << m_socket.remote_endpoint().port()
             << "]";
     return os.str();
 }

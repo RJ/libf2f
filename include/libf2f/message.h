@@ -75,7 +75,6 @@ public:
         : m_payload(0)
     {
         m_header = header;
-        m_guid = std::string(header.guid, 36);
         //std::cout << "CTOR Msg(" << m_guid << ")" << std::endl;
     }
     
@@ -101,10 +100,23 @@ public:
     virtual const short ttl() const { return m_header.ttl; }
     virtual const short hops() const { return m_header.hops; }
     virtual const boost::uint32_t length() const { return ntohl(m_header.length); }
-    virtual const std::string& guid() const { return m_guid; }
+    virtual const std::string& guid() const 
+    { 
+        if( m_guid.empty() )
+        {
+            m_guid = std::string(m_header.guid, 36);
+        }
+        return m_guid; 
+    }
     // payload
     virtual const char * payload() const { return m_payload; }
     virtual char * payload() { return m_payload; }
+    /// sucks to have to do this really, jsonspirit needs a string or stream:
+    virtual std::string payload_str() const 
+    { 
+        std::string s(m_payload, length());
+        return s;
+    }
     
     virtual size_t malloc_payload()
     {
@@ -132,16 +144,18 @@ public:
         return buffers;
     }
     
-private:
+protected:
     message_header m_header;
-    std::string m_guid;
+    mutable std::string m_guid;
     char * m_payload;
 };
+
+
 
 class PongMessage : public Message
 {
 public:
-    static boost::shared_ptr<Message> factory()
+    PongMessage()
     {
         message_header h;
         memcpy( &h.guid, std::string(GENUUID).data(), 36 );
@@ -150,26 +164,47 @@ public:
         h.ttl  = 1;
         h.hops = 0;
         h.length = 0;
-        return boost::shared_ptr<Message>(new Message( h ));
+        m_header = h;
+        m_payload = 0;
     }
 };
 
 class PingMessage : public Message
 {
 public:
-    static boost::shared_ptr<Message> factory()
+    PingMessage()
     {
         message_header h;
         memcpy( &h.guid, std::string(GENUUID).data(), 36 );
+        //h.guid = GENUUID;
         h.type = PING;
         h.ttl  = 1;
         h.hops = 0;
         h.length = 0;
-        return boost::shared_ptr<Message>(new Message( h ));
+        m_header = h;
+        m_payload = 0;
     }
 };
 
+class GeneralMessage : public Message
+{
+public:
+    GeneralMessage(const char msgtype, const std::string& body)
+    {
+        message_header h;
+        memcpy( &h.guid, std::string(GENUUID).data(), 36 );
+        //h.guid = GENUUID;
+        h.type = msgtype;
+        h.ttl  = 1;
+        h.hops = 0;
+        h.length = htonl( body.length() );
+        m_header = h;
+        malloc_payload();
+        memcpy( m_payload, body.data(), body.length() );
+    }
+};
 
+/*
 
 
 /// File transfer/streaming msgs are special in that they have an additional header describing the payload (just the sid)
@@ -195,6 +230,7 @@ public:
 private:
     mutable std::string m_sid;
 };
+*/
 
 }
 #endif

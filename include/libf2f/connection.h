@@ -4,6 +4,7 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/thread/thread.hpp>
@@ -19,6 +20,7 @@ namespace libf2f {
 
 class Connection;
 typedef boost::shared_ptr<Connection> connection_ptr;
+typedef boost::weak_ptr<Connection> connection_ptr_weak;
 
 /// This class represents a Connection to one other libf2f user.
 /// it knows how to marshal objects to and from the wire protocol
@@ -60,7 +62,8 @@ public:
     
     size_t drain_writeq( std::deque< message_ptr > & out );
     
-    void set_message_received_cb( boost::function< void(message_ptr, connection_ptr) > cb );
+    void push_message_received_cb( boost::function< void(message_ptr, connection_ptr) > cb );
+    void pop_message_received_cb();
     
     std::string str() const;
     
@@ -74,12 +77,15 @@ private:
     
     /// Stateful stuff the protocol handler/servent will set:
     std::string m_username; // username of user at end of Connection
-    bool m_authed;
+    //bool m_authed;
     bool m_sending;
     
+    std::vector< boost::function<void(message_ptr, connection_ptr)> > m_message_received_cbs;
+    boost::mutex m_message_received_cb_mutex; // protects the above
     
-    boost::function< void(message_ptr, connection_ptr) > m_message_received_cb;
     boost::function< void(connection_ptr) > m_fin_cb; // call when we die.
+    
+    bool m_shuttingdown;
     
 };
 

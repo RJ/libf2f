@@ -7,25 +7,39 @@
 #include <boost/foreach.hpp>
 
 // How we typically prep a new connection object:
-#define NEWCONN new Connection(m_acceptor.io_service(), \
+#define NEWCONN new Connection(m_acceptor->io_service(), \
                 boost::bind( &Router::message_received, this, _1, _2 ), \
-                boost::bind( &Router::unregister_connection, this, _1) )
+                boost::bind( &Router::connection_terminated, this, _1) )
 
 namespace libf2f {
 
 using namespace std;
 
-Router::Router( boost::asio::ip::tcp::acceptor& acc, Protocol * p )
-    : m_acceptor( acc ), m_protocol( p ), seen_connections(0)
+Router::Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp,
+                Protocol * p )
+    : m_acceptor( accp ), m_protocol( p ), seen_connections(0)
 {
     p->set_router( this );
     // Start an accept operation for a new connection.
     connection_ptr new_conn(NEWCONN);
     
-    m_acceptor.async_accept(new_conn->socket(),
+    m_acceptor->async_accept(new_conn->socket(),
         boost::bind(&Router::handle_accept, this,
         boost::asio::placeholders::error, new_conn));
 
+}
+
+void
+Router::stop()
+{
+    m_acceptor->get_io_service().stop();
+}
+
+void
+Router::connection_terminated( connection_ptr conn )
+{
+    unregister_connection( conn );
+    m_protocol->connection_terminated( conn );
 }
 
 /// Handle completion of a accept operation.
@@ -54,7 +68,7 @@ Router::handle_accept(const boost::system::error_code& e, connection_ptr conn)
     // Start an accept operation for a new connection.
     connection_ptr new_conn(NEWCONN);
     
-    m_acceptor.async_accept(new_conn->socket(),
+    m_acceptor->async_accept(new_conn->socket(),
         boost::bind(&Router::handle_accept, this,
             boost::asio::placeholders::error, new_conn));
 }
@@ -75,7 +89,7 @@ Router::register_connection( connection_ptr conn )
         }
     }
     m_connections.push_back( conn );
-    connections_str();
+    cout << connections_str() << endl;
 }
 
 void
@@ -91,18 +105,20 @@ Router::unregister_connection( connection_ptr conn )
             cout << "Router::unregistered " << conn->str() << endl;
         }
     }
-    connections_str();
+    cout << connections_str() << endl;
 }
 
-void
+string
 Router::connections_str()
 {
-    cout << "<connections>" << endl;
+    ostringstream os;
+    os << "<connections>" << endl;
     BOOST_FOREACH( connection_ptr conn, m_connections )
     {
-        cout << conn->str() << endl;
+        os << conn->str() << endl;
     }
-    cout << "</connections>" << endl;
+    os << "</connections>" << endl;
+    return os.str();
 }
 
 /// this is the default msg recvd callback passed to new connections:
@@ -126,7 +142,7 @@ Router::message_received( message_ptr msgp, connection_ptr conn )
     if( msgp->type() == PING )
     {
         cout << "got PING, responding.." << endl;
-        conn->async_write( PongMessage::factory() );
+        conn->async_write( message_ptr(new PongMessage()) );
         return;
     }
     
@@ -181,6 +197,26 @@ Router::foreach_conns( boost::function<void(connection_ptr)> fun )
         fun( conn );
     }
 }
+
+
+
+void 
+Router::foreach_conns_except( boost::function<void(connection_ptr)> fun, connection_ptr conn )
+{
+    boost::mutex::scoped_lock lk(m_connections_mutex);
+    BOOST_FOREACH( connection_ptr c, m_connections )
+    {
+        if( c == conn ) continue;
+        fun( c );
+    }
+}
+
+void 
+Router::send_all( message_ptr msgp )
+{
+    foreach_conns( boost::bind(&Connection::async_write, _1, msgp) );
+}
+
 
 
 } //ns
