@@ -9,17 +9,6 @@
 #define GENUUID "266695BF-AC15-4991-A01D-21DC180FD4B1"
 #endif
 
-#define PING             0
-#define PONG             1
-#define IDENT            2
-#define QUERY            3
-#define QUERYRESULT      4
-#define QUERYCANCEL      5
-#define SIDREQUEST       6
-#define SIDDATA          7
-#define SIDCANCEL        8
-#define BYE              9
-
 namespace libf2f {
 
 class Message;
@@ -150,42 +139,6 @@ protected:
     char * m_payload;
 };
 
-
-
-class PongMessage : public Message
-{
-public:
-    PongMessage()
-    {
-        message_header h;
-        memcpy( &h.guid, std::string(GENUUID).data(), 36 );
-        //h.guid = GENUUID;
-        h.type = PONG;
-        h.ttl  = 1;
-        h.hops = 0;
-        h.length = 0;
-        m_header = h;
-        m_payload = 0;
-    }
-};
-
-class PingMessage : public Message
-{
-public:
-    PingMessage()
-    {
-        message_header h;
-        memcpy( &h.guid, std::string(GENUUID).data(), 36 );
-        //h.guid = GENUUID;
-        h.type = PING;
-        h.ttl  = 1;
-        h.hops = 0;
-        h.length = 0;
-        m_header = h;
-        m_payload = 0;
-    }
-};
-
 class GeneralMessage : public Message
 {
 public:
@@ -204,33 +157,6 @@ public:
     }
 };
 
-/*
-
-
-/// File transfer/streaming msgs are special in that they have an additional header describing the payload (just the sid)
-class DataMessage : public Message
-{
-public:
-
-    /// Grab the SID from the first 36 bytes of the payload:
-    const std::string& sid() const
-    {
-        if( m_sid.empty() )
-        {
-            m_sid = "TODO"; //std::string( payload(), 36 );
-        }
-        return m_sid;
-    }
-    
-    const boost::asio::const_buffer payload_data() const
-    {
-        return boost::asio::const_buffer( payload()+36, length()-36 );
-    }
-    
-private:
-    mutable std::string m_sid;
-};
-*/
 
 }
 #endif

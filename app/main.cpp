@@ -4,11 +4,12 @@
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/algorithm/string.hpp>
-#include "boost/lambda/lambda.hpp"
-#include <boost/lambda/if.hpp>
 
 #include "libf2f/router.h"
 #include "libf2f/protocol.h"
+
+#include "demo_messages.h"
+#include "demo_protocol.h"
 
 using namespace std;
 using namespace libf2f;
@@ -30,7 +31,7 @@ int main(int argc, char **argv)
     
     boost::asio::io_service ios;
     
-    Protocol p;
+    DemoProtocol p;
     short port = atoi(argv[1]);
     cout << "Listening on port " << port << endl;
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp( 

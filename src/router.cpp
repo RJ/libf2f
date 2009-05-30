@@ -137,7 +137,7 @@ Router::message_received( message_ptr msgp, connection_ptr conn )
         cout << "Dropping, msg length: " << msgp->length() << endl;
         return;
     }
-    
+    /* 
     // handle ping
     if( msgp->type() == PING )
     {
@@ -152,7 +152,7 @@ Router::message_received( message_ptr msgp, connection_ptr conn )
         cout << "got PONG" << endl;
         return;
     }
-    
+    */
     m_protocol->message_received( msgp, conn );
 }
 
