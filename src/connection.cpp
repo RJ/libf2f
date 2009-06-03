@@ -8,7 +8,9 @@ using namespace std;
 Connection::Connection( boost::asio::io_service& io_service, 
             boost::function< void(message_ptr, connection_ptr) > msg_cb,
             boost::function< void(connection_ptr) > fin_cb )
-    : m_socket(io_service), m_sending(false),
+    : m_socket(io_service), 
+      m_ready(false),
+      m_sending(false),
       m_fin_cb(fin_cb),
       m_shuttingdown(false)
 {
@@ -161,7 +163,8 @@ std::string
 Connection::str() const 
 {
     std::ostringstream os;
-    os   << "[Connection:"
+    os   << "[Connection: '"
+            << m_name << "' "
             << m_socket.remote_endpoint().address().to_string()
             << ":"
             << m_socket.remote_endpoint().port()

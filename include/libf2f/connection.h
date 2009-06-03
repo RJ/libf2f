@@ -67,7 +67,13 @@ public:
     
     std::string str() const;
     
+    const bool ready() const { return m_ready; }
+    void set_ready( bool b ) { m_ready = b; }
+    const std::string& name() const { return m_name; }
+    void set_name( const std::string& n ) { m_name = n; }
+    
 private:
+    
     boost::asio::ip::tcp::socket m_socket; // underlying socket
     
     boost::mutex m_mutex;               // protects outgoing message queue
@@ -76,9 +82,10 @@ private:
     size_t max_writeq_size;             // max number of bytes in the queue
     
     /// Stateful stuff the protocol handler/servent will set:
-    std::string m_username; // username of user at end of Connection
-    //bool m_authed;
-    bool m_sending;
+    std::string m_name; // "name" of user at end of Connection
+    
+    bool m_ready; // ready for normal messages (ie, we authed etc)
+    bool m_sending; // currently sending something?
     
     std::vector< boost::function<void(message_ptr, connection_ptr)> > m_message_received_cbs;
     boost::mutex m_message_received_cb_mutex; // protects the above

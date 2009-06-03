@@ -5,8 +5,9 @@
 
 using namespace libf2f;
 
-#define PING             0
-#define PONG             1
+#define PING            0
+#define PONG            1
+#define QUERY           2
 
 class PongMessage : public Message
 {

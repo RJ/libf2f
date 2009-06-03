@@ -191,9 +191,11 @@ Router::handle_connect( const boost::system::error_code& e,
 void 
 Router::foreach_conns( boost::function<void(connection_ptr)> fun )
 {
+    cout << "foreach_conns" << endl;
     boost::mutex::scoped_lock lk(m_connections_mutex);
     BOOST_FOREACH( connection_ptr conn, m_connections )
     {
+        cout << "Sending to " << conn->str() << endl;
         fun( conn );
     }
 }
