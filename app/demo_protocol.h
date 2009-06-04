@@ -2,6 +2,7 @@
 #define __F2FDEMO_PROTOCOL_H__
 
 #include "libf2f/protocol.h"
+#include "demo_messages.h"
 
 using namespace libf2f;
 
@@ -47,7 +48,7 @@ public:
         {
             case PING:
                 std::cout << "Got a ping, replying with a pong." << std::endl;
-                conn->async_write( message_ptr(new PongMessage()) );
+                conn->async_write( message_ptr(new PongMessage( m_router->gen_uuid() )) );
                 break;
             case PONG:
                 std::cout << "Got a pong, yay!" << std::endl;

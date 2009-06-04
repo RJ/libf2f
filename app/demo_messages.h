@@ -12,10 +12,10 @@ using namespace libf2f;
 class PongMessage : public Message
 {
 public:
-    PongMessage()
+    PongMessage( std::string uid )
     {
         message_header h;
-        memcpy( &h.guid, std::string(GENUUID).data(), 36 );
+        memcpy( &h.guid, uid.c_str(), 36 );
         h.type = PONG;
         h.ttl  = 1;
         h.hops = 0;
@@ -28,10 +28,10 @@ public:
 class PingMessage : public Message
 {
 public:
-    PingMessage()
+    PingMessage( std::string uid )
     {
         message_header h;
-        memcpy( &h.guid, std::string(GENUUID).data(), 36 );
+        memcpy( &h.guid, uid.c_str(), 36 );
         h.type = PING;
         h.ttl  = 1;
         h.hops = 0;

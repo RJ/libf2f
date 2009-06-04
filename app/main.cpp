@@ -21,6 +21,12 @@ void iorun( boost::asio::io_service * ios )
     cout << "io ended" << endl;
 }
 
+std::string
+lame_uuid_gen()
+{
+    return "266695BF-AC15-4991-A01D-21DC180FD4B1";
+}
+
 int main(int argc, char **argv)
 {
     if( argc != 2 )
@@ -41,7 +47,7 @@ int main(int argc, char **argv)
                             port)
             ) 
     );
-    Router r(accp, &p);
+    Router r(accp, &p, boost::bind(&lame_uuid_gen));
     
     boost::thread t( boost::bind(&iorun, &ios) );
     
@@ -70,16 +76,16 @@ int main(int argc, char **argv)
         
         if(parts[0] == "pingall")
         {
-            message_ptr ping = message_ptr(new PingMessage());
+            message_ptr ping = message_ptr(new PingMessage( r.gen_uuid() ));
             r.send_all(ping);
         }
-        
+        /*
         if(parts[0] == "query" && parts.size() == 2)
         {
             message_ptr search = message_ptr(new GeneralMessage(QUERY, parts[1]) );
             r.send_all(search);
         }
-        
+        */
         if(parts[0] == "quit") break;
     }
 

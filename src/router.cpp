@@ -7,18 +7,28 @@
 #include <boost/foreach.hpp>
 
 // How we typically prep a new connection object:
-#define NEWCONN new Connection(m_acceptor->io_service(), \
-                boost::bind( &Router::message_received, this, _1, _2 ), \
-                boost::bind( &Router::connection_terminated, this, _1) )
+#define NEWCONN new Connection( m_acceptor->io_service(), this )
 
 namespace libf2f {
 
 using namespace std;
 
+                
 Router::Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp,
-                Protocol * p )
-    : m_acceptor( accp ), m_protocol( p ), seen_connections(0)
+                Protocol * p, boost::function<std::string()> uuidf )
+    :   m_acceptor( accp ),
+        m_protocol( p ),
+        seen_connections(0),
+        m_uuidgen( uuidf )
 {
+    cout << "Testing uuid generator... " << flush;
+    string uuid = m_uuidgen();
+    if( uuid.length() != 36 )
+    {
+        cout << "ERROR length must be 36." << endl;
+        throw;
+    }
+    cout << "OK" << endl;
     p->set_router( this );
     // Start an accept operation for a new connection.
     connection_ptr new_conn(NEWCONN);
@@ -27,6 +37,12 @@ Router::Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp,
         boost::bind(&Router::handle_accept, this,
         boost::asio::placeholders::error, new_conn));
 
+}
+
+std::string 
+Router::gen_uuid()
+{
+    return m_uuidgen();
 }
 
 void
@@ -108,6 +124,21 @@ Router::unregister_connection( connection_ptr conn )
     cout << connections_str() << endl;
 }
 
+connection_ptr 
+Router::get_connection_by_name( const std::string &name )
+{
+    boost::mutex::scoped_lock lk(m_connections_mutex);
+    vector<connection_ptr>::iterator it;
+    for( it=m_connections.begin() ; it < m_connections.end() ; ++it )
+    {
+        if( (*it)->name() == name )
+        {
+            return *it;
+        }
+    }
+    return connection_ptr();
+}
+
 string
 Router::connections_str()
 {
@@ -132,7 +163,7 @@ Router::message_received( message_ptr msgp, connection_ptr conn )
         cout << "Dropping, hop count: " << msgp->hops() << endl;
         return;
     }
-    if( msgp->length() > 10240 ) // 10k hard limit
+    if( msgp->length() > 16384 ) // hard limit
     {
         cout << "Dropping, msg length: " << msgp->length() << endl;
         return;
@@ -195,7 +226,6 @@ Router::foreach_conns( boost::function<void(connection_ptr)> fun )
     boost::mutex::scoped_lock lk(m_connections_mutex);
     BOOST_FOREACH( connection_ptr conn, m_connections )
     {
-        cout << "Sending to " << conn->str() << endl;
         fun( conn );
     }
 }
@@ -216,7 +246,13 @@ Router::foreach_conns_except( boost::function<void(connection_ptr)> fun, connect
 void 
 Router::send_all( message_ptr msgp )
 {
-    foreach_conns( boost::bind(&Connection::async_write, _1, msgp) );
+    //foreach_conns( boost::bind(&Connection::async_write, _1, msgp) );
+    boost::mutex::scoped_lock lk(m_connections_mutex);
+    BOOST_FOREACH( connection_ptr conn, m_connections )
+    {
+        cout << "Sending " << msgp->str() << " to " << conn->str() << endl;
+        conn->async_write( msgp );
+    }
 }
 
 

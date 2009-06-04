@@ -1,21 +1,19 @@
 #include "libf2f/connection.h"
+#include "libf2f/router.h"
 #include <boost/foreach.hpp>
 
 namespace libf2f {
 
 using namespace std;
 
-Connection::Connection( boost::asio::io_service& io_service, 
-            boost::function< void(message_ptr, connection_ptr) > msg_cb,
-            boost::function< void(connection_ptr) > fin_cb )
+Connection::Connection( boost::asio::io_service& io_service, Router * r )
     : m_socket(io_service), 
       m_ready(false),
       m_sending(false),
-      m_fin_cb(fin_cb),
-      m_shuttingdown(false)
+      m_shuttingdown(false),
+      m_router(r)
 {
     std::cout << "CTOR connection" << std::endl;
-    push_message_received_cb( msg_cb );
     max_writeq_size = 20*1024; // 20kb
 }
 
@@ -35,7 +33,7 @@ Connection::fin()
 {
     m_shuttingdown = true;
     std::cout << "FIN connection " << str() << std::endl;
-    m_fin_cb( shared_from_this() );
+    m_router->connection_terminated( shared_from_this() );
     close();
 }
 
@@ -120,43 +118,14 @@ Connection::handle_read_data(const boost::system::error_code& e, message_ptr msg
         fin();
         return;
     }
+    //cout << "connection::rcvd_msg: " << msgp->str() << endl;
     // report that we received a new message
-    {
-        boost::mutex::scoped_lock lk(m_message_received_cb_mutex);
+    if( m_message_received_cbs.empty() )
+        m_router->message_received( msgp, shared_from_this() );
+    else 
         m_message_received_cbs.back()( msgp, shared_from_this() );
-    }
     // setup recv for next message:
     async_read();
-}
-
-
-void 
-Connection::push_message_received_cb( boost::function< void(message_ptr, connection_ptr) > cb )
-{
-    boost::mutex::scoped_lock lk(m_message_received_cb_mutex);
-    m_message_received_cbs.push_back(cb);
-}
-
-void 
-Connection::pop_message_received_cb()
-{
-    boost::mutex::scoped_lock lk(m_message_received_cb_mutex);
-    m_message_received_cbs.pop_back();
-}
-
-/// unused atm.. todo flow control?
-size_t
-Connection::drain_writeq( std::deque< message_ptr > & out )
-{
-    size_t ret;
-    boost::mutex::scoped_lock lk(m_mutex);
-    BOOST_FOREACH( message_ptr mp, m_writeq )
-    {
-        ret++;
-        out.push_back( mp );
-    }
-    m_writeq.clear();
-    return ret;
 }
 
 std::string 
@@ -204,6 +173,18 @@ Connection::do_async_write(const boost::system::error_code& e, message_ptr finis
                               boost::bind( &Connection::do_async_write, this,
                                            boost::asio::placeholders::error,
                                            msgp ) );
+}
+
+void
+Connection::push_message_received_cb( boost::function< void(message_ptr, connection_ptr) > cb )
+{
+    m_message_received_cbs.push_back(cb);
+}
+ 
+void
+Connection::pop_message_received_cb()
+{
+    m_message_received_cbs.pop_back();
 }
 
 } //ns

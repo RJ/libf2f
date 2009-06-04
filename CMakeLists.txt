@@ -14,6 +14,7 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${F2F_PATH}/lib")
 # alternatively, recompile boost with -fPIC like so:
 # bjam --v2 cxxflags=-fPIC stage
 SET(Boost_USE_STATIC_LIBS ON)
+#SET(Boost_USE_STATIC_LIBS OFF)
 
 SET(Boost_USE_MULTITHREADED ON)
 FIND_PACKAGE(Boost 1.35 REQUIRED COMPONENTS filesystem system regex thread program_options date_time)

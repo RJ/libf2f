@@ -3,6 +3,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -18,10 +19,6 @@
 
 namespace libf2f {
 
-class Connection;
-typedef boost::shared_ptr<Connection> connection_ptr;
-typedef boost::weak_ptr<Connection> connection_ptr_weak;
-
 /// This class represents a Connection to one other libf2f user.
 /// it knows how to marshal objects to and from the wire protocol
 /// It keeps some state related to the Connection, eg are they authenticated.
@@ -30,9 +27,7 @@ class Connection
 {
 public:
 
-    Connection( boost::asio::io_service& io_service, 
-                boost::function< void(message_ptr, connection_ptr) > msg_cb,
-                boost::function< void(connection_ptr) > fin_cb );
+    Connection( boost::asio::io_service& io_service, Router * r );
     
     ~Connection();
     
@@ -59,9 +54,7 @@ public:
     void handle_read_data(const boost::system::error_code& e, message_ptr msgp);
 
     size_t writeq_size() const { return m_writeq.size(); }
-    
-    size_t drain_writeq( std::deque< message_ptr > & out );
-    
+
     void push_message_received_cb( boost::function< void(message_ptr, connection_ptr) > cb );
     void pop_message_received_cb();
     
@@ -86,13 +79,12 @@ private:
     
     bool m_ready; // ready for normal messages (ie, we authed etc)
     bool m_sending; // currently sending something?
+    bool m_shuttingdown;
     
     std::vector< boost::function<void(message_ptr, connection_ptr)> > m_message_received_cbs;
-    boost::mutex m_message_received_cb_mutex; // protects the above
+    ///boost::mutex m_message_received_cb_mutex; // protects the above
     
-    boost::function< void(connection_ptr) > m_fin_cb; // call when we die.
-    
-    bool m_shuttingdown;
+    Router * m_router;
     
 };
 

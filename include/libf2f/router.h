@@ -4,6 +4,8 @@
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
+#include <boost/thread.hpp>
 #include <boost/lexical_cast.hpp>
 #include "boost/lambda/lambda.hpp"
 #include <boost/lambda/if.hpp>
@@ -11,11 +13,11 @@
 #include <vector>
 
 #include "libf2f/message.h"
-#include "libf2f/connection.h"
 
 namespace libf2f {
 
 class Protocol;
+class Connection;
 
 
 /// aka servent - responsible for managing connections
@@ -28,7 +30,11 @@ public:
     /// acceptor(io_service, 
     ///          boost::asio::ip::tcp::endpoint(
     ///             boost::asio::ip::tcp::v4(), port) )
-    Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp, Protocol * p );
+    Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp, Protocol * p, boost::function<std::string()> uuidf );
+    
+    /// lamest uuid generator ever, please supply your own.
+    std::string lame_uuid_gen();
+    std::string gen_uuid();
     
     /// calls io_service::stop on acceptor.
     void stop();
@@ -60,6 +66,10 @@ public:
     void send_all( message_ptr msgp );
     
     std::string connections_str();
+    
+    connection_ptr get_connection_by_name( const std::string &name );
+
+    
 private:
     /// Router keeps track of connections:
     void register_connection( connection_ptr conn );
@@ -80,6 +90,8 @@ private:
     
     /// misc stats:
     unsigned int seen_connections; // num incoming connections accepted
+    
+    boost::function<std::string()> m_uuidgen;
 };
 
 } //ns

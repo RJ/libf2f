@@ -5,14 +5,14 @@
 #include <boost/asio/buffer.hpp>
 #include <iostream>
 
-#ifndef GENUUID 
-#define GENUUID "266695BF-AC15-4991-A01D-21DC180FD4B1"
-#endif
-
 namespace libf2f {
 
 class Message;
 typedef boost::shared_ptr<Message> message_ptr;
+class Connection;
+class Router;
+typedef boost::shared_ptr<Connection> connection_ptr;
+typedef boost::weak_ptr<Connection> connection_ptr_weak;
 
 /*
         Bytes   Description
@@ -142,11 +142,10 @@ protected:
 class GeneralMessage : public Message
 {
 public:
-    GeneralMessage(const char msgtype, const std::string& body)
+    GeneralMessage(const char msgtype, const std::string& body, const std::string& uuid)
     {
         message_header h;
-        memcpy( &h.guid, std::string(GENUUID).data(), 36 );
-        //h.guid = GENUUID;
+        memcpy( &h.guid, uuid.data(), 36 );
         h.type = msgtype;
         h.ttl  = 1;
         h.hops = 0;
