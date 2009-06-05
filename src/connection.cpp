@@ -87,7 +87,7 @@ Connection::handle_read_header(const boost::system::error_code& e, message_ptr m
         return;
     }
     // Start an asynchronous call to receive the payload data
-    assert( msgp->length() <= 10240 ); // 10K hard limit on payload size 
+    assert( msgp->length() <= 16384 ); // 10K hard limit on payload size 
     // allocate space for payload, length taken from header:
     msgp->malloc_payload();
     // short-circuit if there is no payload
