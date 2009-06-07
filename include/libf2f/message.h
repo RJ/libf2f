@@ -73,6 +73,11 @@ public:
         if(m_payload) free(m_payload);
     }
     
+    virtual const boost::uint32_t total_length() const 
+    {
+        return sizeof(message_header) + length();
+    }
+    
     virtual const std::string str() const
     {
         std::ostringstream os;

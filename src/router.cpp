@@ -6,14 +6,10 @@
 #include <boost/thread.hpp>
 #include <boost/foreach.hpp>
 
-// How we typically prep a new connection object:
-#define NEWCONN new Connection( m_acceptor->io_service(), this )
-
 namespace libf2f {
 
 using namespace std;
 
-                
 Router::Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp,
                 Protocol * p, boost::function<std::string()> uuidf )
     :   m_acceptor( accp ),
@@ -31,7 +27,7 @@ Router::Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp,
     cout << "OK" << endl;
     p->set_router( this );
     // Start an accept operation for a new connection.
-    connection_ptr new_conn(NEWCONN);
+    connection_ptr new_conn = new_connection();
     
     m_acceptor->async_accept(new_conn->socket(),
         boost::bind(&Router::handle_accept, this,
@@ -39,6 +35,12 @@ Router::Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp,
 
 }
 
+connection_ptr
+Router::new_connection()
+{
+    return connection_ptr( new Connection( m_acceptor->io_service(), this ) );
+}
+                
 std::string 
 Router::gen_uuid()
 {
@@ -82,7 +84,7 @@ Router::handle_accept(const boost::system::error_code& e, connection_ptr conn)
     }
     
     // Start an accept operation for a new connection.
-    connection_ptr new_conn(NEWCONN);
+    connection_ptr new_conn = new_connection();
     
     m_acceptor->async_accept(new_conn->socket(),
         boost::bind(&Router::handle_accept, this,
@@ -193,7 +195,7 @@ Router::connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint)
 {
     cout << "connect_to_remote(" << endpoint.address().to_string()<<","
          << endpoint.port()<<")" << endl;
-    connection_ptr new_conn(NEWCONN);
+    connection_ptr new_conn = new_connection();
     // Start an asynchronous connect operation.
     new_conn->socket().async_connect(endpoint,
         boost::bind(&Router::handle_connect, this,

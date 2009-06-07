@@ -50,7 +50,7 @@ Connection::async_write(message_ptr msg)
     {
         boost::mutex::scoped_lock lk(m_mutex);
         m_writeq.push_back(msg);
-        m_writeq_size += sizeof(message_header) + msg->length();
+        m_writeq_size += msg->total_length();
     }
     // make sure our sending loop is running:
     boost::system::error_code e;
@@ -165,7 +165,7 @@ Connection::do_async_write(const boost::system::error_code& e, message_ptr finis
         
         msgp = m_writeq.front();
         m_writeq.pop_front();
-        m_writeq_size -= (sizeof(message_header) + msgp->length());
+        m_writeq_size -= msgp->total_length();
         m_sending = true;
     } // mutex scope
     

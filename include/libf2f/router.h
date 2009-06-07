@@ -32,6 +32,9 @@ public:
     ///             boost::asio::ip::tcp::v4(), port) )
     Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp, Protocol * p, boost::function<std::string()> uuidf );
     
+    /// how a new Connection is prepped:
+    connection_ptr new_connection();
+    
     /// lamest uuid generator ever, please supply your own.
     std::string lame_uuid_gen();
     std::string gen_uuid();
