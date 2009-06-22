@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdlib>
 #include <sstream>
 #include <string>
 #include <boost/asio.hpp>
@@ -21,10 +22,16 @@ void iorun( boost::asio::io_service * ios )
     cout << "io ended" << endl;
 }
 
+/// this is a VERY BAD uuid generator. use a real library!
 std::string
 lame_uuid_gen()
 {
-    return "266695BF-AC15-4991-A01D-21DC180FD4B1";
+    ostringstream os;
+    os << random();
+    string num = os.str();
+    num.insert(0, 36 - num.size(), '0');
+    return num;
+    //return "266695BF-AC15-4991-A01D-21DC180FD4B1";
 }
 
 int main(int argc, char **argv)
