@@ -40,6 +40,8 @@ Hops            The number of times the message has been forwarded.
                 Hops fields of the message, and TTL(0) is maximum
                 number of hops a message will travel (7 in gnutella networks, less for us?).
 
+(ttl/hops not used in darknet configuration)
+
 */
 
 /// All messages start with this header:

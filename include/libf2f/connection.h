@@ -65,6 +65,20 @@ public:
     const std::string& name() const { return m_name; }
     void set_name( const std::string& n ) { m_name = n; }
     
+    /// get/set api for storing things associated with the connection
+    /// bit of a hack, exposes weakness in api/design atm IMO.
+    void set(const std::string&  key, const std::string& val)
+    {
+        boost::mutex::scoped_lock lk(m_props_mutex);
+        m_props[key]=val;
+    }
+    std::string get(const std::string& key)
+    {
+        boost::mutex::scoped_lock lk(m_props_mutex);
+        if( m_props.find(key) == m_props.end() ) return "";
+        return m_props[key];
+    }
+    
 private:
     
     boost::asio::ip::tcp::socket m_socket; // underlying socket
@@ -76,6 +90,8 @@ private:
     
     /// Stateful stuff the protocol handler/servent will set:
     std::string m_name; // "name" of user at end of Connection
+    std::map< std::string, std::string > m_props;
+    boost::mutex m_props_mutex;
     
     bool m_ready; // ready for normal messages (ie, we authed etc)
     bool m_sending; // currently sending something?

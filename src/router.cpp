@@ -50,7 +50,11 @@ Router::gen_uuid()
 void
 Router::stop()
 {
-    m_acceptor->get_io_service().stop();
+    while( m_connections.size() )
+    {
+        m_connections.front()->fin();
+    }
+    //m_acceptor->get_io_service().stop();
 }
 
 void
@@ -141,6 +145,7 @@ Router::get_connection_by_name( const std::string &name )
     return connection_ptr();
 }
 
+/// debug usage - get list of connections
 string
 Router::connections_str()
 {
@@ -154,7 +159,19 @@ Router::connections_str()
     return os.str();
 }
 
-/// this is the default msg recvd callback passed to new connections:
+vector<string>
+Router::get_connected_names()
+{
+    vector<string> v;
+    BOOST_FOREACH( connection_ptr conn, m_connections )
+    {
+        v.push_back( conn->name() );
+    }
+    return v;
+}
+
+/// this is the default msg recvd callback passed to new connections
+/// it does some basic sanity checks, then fires the callback
 void
 Router::message_received( message_ptr msgp, connection_ptr conn )
 {
@@ -193,9 +210,21 @@ Router::message_received( message_ptr msgp, connection_ptr conn )
 void 
 Router::connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint)
 {
-    cout << "connect_to_remote(" << endpoint.address().to_string()<<","
+    map<string,string> props;
+    connect_to_remote( endpoint, props );
+}
+
+void 
+Router::connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint, const map<string,string>& props)
+{
+    cout << "connect_to_remote(" << endpoint.address().to_string()<<":"
          << endpoint.port()<<")" << endl;
     connection_ptr new_conn = new_connection();
+    typedef pair<string,string> pair_t;
+    BOOST_FOREACH( pair_t p, props )
+    {
+        new_conn->set( p.first, p.second );
+    }
     // Start an asynchronous connect operation.
     new_conn->socket().async_connect(endpoint,
         boost::bind(&Router::handle_connect, this,

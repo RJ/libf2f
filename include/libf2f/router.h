@@ -47,6 +47,7 @@ public:
                    
     /// Connect out to a remote Servent:
     void connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint);
+    void connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint, const std::map<std::string,std::string>& props);
     
     /// Handle completion of a connect operation.
     void handle_connect(const boost::system::error_code& e,
@@ -69,6 +70,7 @@ public:
     void send_all( message_ptr msgp );
     
     std::string connections_str();
+    std::vector<std::string> get_connected_names();
     
     connection_ptr get_connection_by_name( const std::string &name );
 
