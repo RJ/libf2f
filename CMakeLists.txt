@@ -46,10 +46,10 @@ IF(NOT WIN32)
     ADD_DEFINITIONS(-g )
     ADD_DEFINITIONS(-fno-operator-names)
     ADD_DEFINITIONS(-fPIC)
-    ADD_DEFINITIONS(-02)
+    ADD_DEFINITIONS(-O2)
 ENDIF(NOT WIN32)
                      
-ADD_LIBRARY( f2f SHARED
+ADD_LIBRARY( f2f STATIC
              ${SRC}/router.cpp
              ${SRC}/protocol.cpp
              ${SRC}/connection.cpp
@@ -72,6 +72,6 @@ TARGET_LINK_LIBRARIES( f2f-demo
 					   ${Boost_LIBRARIES}	  # Boost license
                      )
 
-INSTALL(TARGETS f2f LIBRARY DESTINATION lib)
+INSTALL(TARGETS f2f ARCHIVE DESTINATION lib)
 INSTALL(TARGETS f2f-demo RUNTIME DESTINATION bin)
 INSTALL(DIRECTORY include/libf2f DESTINATION include PATTERN "*~" EXCLUDE)
