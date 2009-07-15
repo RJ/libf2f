@@ -78,7 +78,7 @@ Router::handle_accept(const boost::system::error_code& e, connection_ptr conn)
     }
     if( !m_protocol->new_incoming_connection(conn) )
     {
-        cout << "Rejecting connection " << conn->str() << endl;
+        // cout << "Rejecting connection " << conn->str() << endl;
         // don't register it (so it autodestructs)
     }
     else
@@ -124,7 +124,7 @@ Router::unregister_connection( connection_ptr conn )
         if( *it == conn )
         {
             m_connections.erase( it );
-            cout << "Router::unregistered " << conn->str() << endl;
+            //cout << "Router::unregistered " << conn->str() << endl;
         }
     }
     cout << connections_str() << endl;
@@ -175,34 +175,21 @@ Router::get_connected_names()
 void
 Router::message_received( message_ptr msgp, connection_ptr conn )
 {
-    cout << "router::message_received from " << conn->str() 
-         << " " << msgp->str() << endl;
+    //cout << "router::message_received from " << conn->str() 
+    //     << " " << msgp->str() << endl;
+    
+    /* // Not relevant for darknet configurations:
     if( msgp->hops() > 3 )
     {
         cout << "Dropping, hop count: " << msgp->hops() << endl;
         return;
     }
+    */
     if( msgp->length() > 16384 ) // hard limit
     {
-        cout << "Dropping, msg length: " << msgp->length() << endl;
+        cout << "f2f router: Dropping, msg length: " << msgp->length() << endl;
         return;
     }
-    /* 
-    // handle ping
-    if( msgp->type() == PING )
-    {
-        cout << "got PING, responding.." << endl;
-        conn->async_write( message_ptr(new PongMessage()) );
-        return;
-    }
-    
-    // handle pong
-    if( msgp->type() == PONG )
-    {
-        cout << "got PONG" << endl;
-        return;
-    }
-    */
     m_protocol->message_received( msgp, conn );
 }
 
@@ -217,7 +204,7 @@ Router::connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint)
 void 
 Router::connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint, const map<string,string>& props)
 {
-    cout << "connect_to_remote(" << endpoint.address().to_string()<<":"
+    cout << "router::connect_to_remote(" << endpoint.address().to_string()<<":"
          << endpoint.port()<<")" << endl;
     connection_ptr new_conn = new_connection();
     typedef pair<string,string> pair_t;
@@ -253,7 +240,6 @@ Router::handle_connect( const boost::system::error_code& e,
 void 
 Router::foreach_conns( boost::function<void(connection_ptr)> fun )
 {
-    cout << "foreach_conns" << endl;
     boost::mutex::scoped_lock lk(m_connections_mutex);
     BOOST_FOREACH( connection_ptr conn, m_connections )
     {
@@ -281,7 +267,7 @@ Router::send_all( message_ptr msgp )
     boost::mutex::scoped_lock lk(m_connections_mutex);
     BOOST_FOREACH( connection_ptr conn, m_connections )
     {
-        cout << "Sending " << msgp->str() << " to " << conn->str() << endl;
+        //cout << "Sending " << msgp->str() << " to " << conn->str() << endl;
         conn->async_write( msgp );
     }
 }

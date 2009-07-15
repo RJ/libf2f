@@ -82,7 +82,7 @@ Connection::handle_read_header(const boost::system::error_code& e, message_ptr m
     if( m_shuttingdown ) return;
     if (e)
     {
-        std::cerr << "err" << std::endl;
+        std::cerr << "err handle_read_header" << std::endl;
         fin();
         return;
     }
@@ -114,7 +114,7 @@ Connection::handle_read_data(const boost::system::error_code& e, message_ptr msg
     if( m_shuttingdown ) return;
     if (e)
     {
-        std::cerr << "errrrrrr" << std::endl;
+        std::cerr << "err handle_read_data" << std::endl;
         fin();
         return;
     }
@@ -133,11 +133,16 @@ Connection::str() const
 {
     std::ostringstream os;
     os   << "[Connection: '"
-            << m_name << "' "
-            << m_socket.remote_endpoint().address().to_string()
+            << m_name << "' ";
+    if( m_socket.is_open() )
+    {
+    try{
+        os  << m_socket.remote_endpoint().address().to_string()
             << ":"
-            << m_socket.remote_endpoint().port()
-            << "]";
+            << m_socket.remote_endpoint().port();
+    }catch(...){}
+    }
+    os << "]";
     return os.str();
 }
 
