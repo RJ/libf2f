@@ -8,6 +8,8 @@ SET(SRC "${F2F_PATH}/src")
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${F2F_PATH}/bin")
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${F2F_PATH}/lib")
 
+set(CMAKE_CXX_FLAGS "-pthread")
+
 # binaries get installed here
 SET(CMAKE_INSTALL_PREFIX "/usr/local/")
 
@@ -42,7 +44,7 @@ ENDIF(WIN32)
 
 IF(NOT WIN32)
     # removes operators like "and", "or" and "not"
-    ADD_DEFINITIONS(-Wall -ggdb)
+    #ADD_DEFINITIONS(-Wall -ggdb)
     ADD_DEFINITIONS(-g )
     ADD_DEFINITIONS(-fno-operator-names)
     ADD_DEFINITIONS(-fPIC)
