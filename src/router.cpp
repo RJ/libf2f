@@ -52,9 +52,9 @@ Router::stop()
 {
     while( m_connections.size() )
     {
+        // this removes the connection from m_connections:
         m_connections.front()->fin();
     }
-    //m_acceptor->get_io_service().stop();
 }
 
 void
@@ -111,7 +111,7 @@ Router::register_connection( connection_ptr conn )
         }
     }
     m_connections.push_back( conn );
-    cout << connections_str() << endl;
+    //cout << connections_str() << endl;
 }
 
 void
@@ -127,7 +127,7 @@ Router::unregister_connection( connection_ptr conn )
             //cout << "Router::unregistered " << conn->str() << endl;
         }
     }
-    cout << connections_str() << endl;
+    //cout << connections_str() << endl;
 }
 
 connection_ptr 

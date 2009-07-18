@@ -25,12 +25,14 @@ Connection::~Connection()
 void 
 Connection::close()
 {
+    m_ready = false;
     socket().close();
 }
 
 void 
 Connection::fin()
 {
+    if( m_shuttingdown ) return;
     m_shuttingdown = true;
     std::cout << "FIN connection " << str() << std::endl;
     m_router->connection_terminated( shared_from_this() );
@@ -151,6 +153,14 @@ Connection::str() const
 void 
 Connection::do_async_write(const boost::system::error_code& e, message_ptr finished_msg)
 {
+    if( m_shuttingdown ) return;
+    if( e )
+    {
+        cerr << "Error in libf2f::do_async_write, terminating connection" 
+             << endl;
+        fin();
+        return;
+    }
     message_ptr msgp;
     { // mutex scope
         boost::mutex::scoped_lock lk(m_mutex);
@@ -175,7 +185,8 @@ Connection::do_async_write(const boost::system::error_code& e, message_ptr finis
     } // mutex scope
     
     boost::asio::async_write( socket(), msgp->to_buffers(),
-                              boost::bind( &Connection::do_async_write, this,
+                              boost::bind( &Connection::do_async_write, 
+                                           shared_from_this(),
                                            boost::asio::placeholders::error,
                                            msgp ) );
 }
