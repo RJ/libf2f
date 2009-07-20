@@ -44,7 +44,7 @@ ENDIF(WIN32)
 
 IF(NOT WIN32)
     # removes operators like "and", "or" and "not"
-    #ADD_DEFINITIONS(-Wall -ggdb)
+    ADD_DEFINITIONS(-Wall -ggdb)
     ADD_DEFINITIONS(-g )
     ADD_DEFINITIONS(-fno-operator-names)
     ADD_DEFINITIONS(-fPIC)

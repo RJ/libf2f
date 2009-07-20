@@ -133,8 +133,8 @@ Router::unregister_connection( connection_ptr conn )
 connection_ptr 
 Router::get_connection_by_name( const std::string &name )
 {
-    boost::mutex::scoped_lock lk(m_connections_mutex);
     vector<connection_ptr>::iterator it;
+    boost::mutex::scoped_lock lk(m_connections_mutex);
     for( it=m_connections.begin() ; it < m_connections.end() ; ++it )
     {
         if( (*it)->name() == name )
@@ -163,6 +163,7 @@ vector<string>
 Router::get_connected_names()
 {
     vector<string> v;
+    boost::mutex::scoped_lock lk(m_connections_mutex);
     BOOST_FOREACH( connection_ptr conn, m_connections )
     {
         v.push_back( conn->name() );

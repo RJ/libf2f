@@ -84,7 +84,8 @@ Connection::handle_read_header(const boost::system::error_code& e, message_ptr m
     if( m_shuttingdown ) return;
     if (e)
     {
-        std::cerr << "err handle_read_header" << std::endl;
+        std::cerr << "err " << e.value() << " handle_read_header: " 
+                  << e.message() << std::endl;
         fin();
         return;
     }
@@ -116,7 +117,8 @@ Connection::handle_read_data(const boost::system::error_code& e, message_ptr msg
     if( m_shuttingdown ) return;
     if (e)
     {
-        std::cerr << "err handle_read_data" << std::endl;
+        std::cerr << "err " << e.value() << " handle_read_data: " 
+                  << e.message() << std::endl;
         fin();
         return;
     }
@@ -156,8 +158,8 @@ Connection::do_async_write(const boost::system::error_code& e, message_ptr finis
     if( m_shuttingdown ) return;
     if( e )
     {
-        cerr << "Error in libf2f::do_async_write, terminating connection" 
-             << endl;
+        cerr << "Error in libf2f::do_async_write, terminating connection: " 
+             << e.value() << ", " << e.message() << endl;
         fin();
         return;
     }
