@@ -72,7 +72,6 @@ public:
     virtual ~Message()
     {
         //std::cout << "DTOR Msg(" << m_guid << ")" << std::endl;
-        if(m_payload) free(m_payload);
     }
     
     virtual const boost::uint32_t total_length() const 
@@ -105,26 +104,25 @@ public:
         return m_guid; 
     }
     // payload
-    virtual const char * payload() const { return m_payload; }
-    virtual char * payload() { return m_payload; }
+    virtual const char * payload() const { return m_payload.get(); }
+    virtual char * payload() { return m_payload.get(); }
     /// sucks to have to do this really, jsonspirit needs a string or stream:
-    virtual std::string payload_str() const 
-    { 
-        std::string s(m_payload, length());
+    virtual std::string payload_str() const
+    {
+        std::string s(m_payload.get(), length());
         return s;
     }
     
     virtual size_t malloc_payload()
     {
         if( length() == 0 ) return 0;
-        free(m_payload);
-        m_payload = (char*)malloc( length() );
+        m_payload = std::make_unique<char[]>(length());
         return length();
     }
     
     virtual const boost::asio::mutable_buffer payload_buffer() const
     {
-        return boost::asio::buffer( m_payload, length() );
+        return boost::asio::buffer( m_payload.get(), length() );
     }
     
     virtual std::vector<boost::asio::const_buffer> to_buffers() const
@@ -134,7 +132,7 @@ public:
                             (char*)&m_header, sizeof(message_header) ) );
         if(length())
         {
-            buffers.push_back( boost::asio::buffer( m_payload, length() ) );
+            buffers.push_back( boost::asio::buffer( m_payload.get(), length() ) );
         }
         
         return buffers;
@@ -143,7 +141,7 @@ public:
 protected:
     message_header m_header;
     mutable std::string m_guid;
-    char * m_payload;
+    std::unique_ptr<char[]> m_payload;
 };
 
 class GeneralMessage : public Message
@@ -159,7 +157,7 @@ public:
         h.length = htonl( body.length() );
         m_header = h;
         malloc_payload();
-        memcpy( m_payload, body.data(), body.length() );
+        memcpy( m_payload.get(), body.data(), body.length() );
     }
 };
 
