@@ -38,7 +38,7 @@ Router::Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp,
 connection_ptr
 Router::new_connection()
 {
-    return connection_ptr( new Connection( m_acceptor->io_service(), this ) );
+    return connection_ptr( new Connection( m_acceptor->get_executor(), this ) );
 }
                 
 std::string 

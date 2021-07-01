@@ -2,7 +2,7 @@
 #define _LIBF2F_PEER_PeerConnection_H_
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -27,8 +27,8 @@ class Connection
 {
 public:
 
-    Connection( boost::asio::io_service& io_service, Router * r );
-    
+    Connection( const boost::asio::any_io_executor& executor, Router * r );
+
     ~Connection();
     
     void close();
