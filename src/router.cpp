@@ -17,14 +17,12 @@ Router::Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp,
         seen_connections(0),
         m_uuidgen( uuidf )
 {
-    cout << "Testing uuid generator... " << flush;
     string uuid = m_uuidgen();
     if( uuid.length() != 36 )
     {
         cout << "ERROR length must be 36." << endl;
         throw;
     }
-    cout << "OK" << endl;
     p->set_router( this );
     // Start an accept operation for a new connection.
     connection_ptr new_conn = new_connection();
@@ -176,9 +174,6 @@ Router::get_connected_names()
 void
 Router::message_received( message_ptr msgp, connection_ptr conn )
 {
-    //cout << "router::message_received from " << conn->str() 
-    //     << " " << msgp->str() << endl;
-    
     /* // Not relevant for darknet configurations:
     if( msgp->hops() > 3 )
     {
@@ -195,18 +190,16 @@ Router::message_received( message_ptr msgp, connection_ptr conn )
 }
 
 /// Connect out to a remote Servent at endpoint
-void 
+void
 Router::connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint)
 {
     map<string,string> props;
     connect_to_remote( endpoint, props );
 }
 
-void 
+void
 Router::connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint, const map<string,string>& props)
 {
-    cout << "router::connect_to_remote(" << endpoint.address().to_string()<<":"
-         << endpoint.port()<<")" << endl;
     connection_ptr new_conn = new_connection();
     typedef pair<string,string> pair_t;
     BOOST_FOREACH( pair_t p, props )
@@ -227,8 +220,6 @@ Router::handle_connect( const boost::system::error_code& e,
 {
     if (e)
     {
-        std::cerr   << "Failed to connect out to remote Servent: " 
-                    << e.message() << std::endl;
         return;
     }
     /// Successfully established connection. 

@@ -13,13 +13,11 @@ Connection::Connection( const boost::asio::any_io_executor& executor, Router * r
       m_shuttingdown(false),
       m_router(r)
 {
-    std::cout << "CTOR connection" << std::endl;
     max_writeq_size = 20*1024; // 20kb
 }
 
 Connection::~Connection()
 {
-    std::cout << "dtor Connection shutting down" << std::endl;
 }
 
 void 
@@ -34,7 +32,6 @@ Connection::fin()
 {
     if( m_shuttingdown ) return;
     m_shuttingdown = true;
-    std::cout << "FIN connection " << str() << std::endl;
     m_router->connection_terminated( shared_from_this() );
     close();
 }
@@ -84,8 +81,6 @@ Connection::handle_read_header(const boost::system::error_code& e, message_ptr m
     if( m_shuttingdown ) return;
     if (e)
     {
-        std::cerr << "err " << e.value() << " handle_read_header: " 
-                  << e.message() << std::endl;
         fin();
         return;
     }
@@ -117,8 +112,6 @@ Connection::handle_read_data(const boost::system::error_code& e, message_ptr msg
     if( m_shuttingdown ) return;
     if (e)
     {
-        std::cerr << "err " << e.value() << " handle_read_data: " 
-                  << e.message() << std::endl;
         fin();
         return;
     }

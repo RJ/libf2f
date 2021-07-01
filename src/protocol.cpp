@@ -6,7 +6,6 @@ using namespace std;
 
 Protocol::Protocol()
 {
-    cout << "CTOR Protocol" << endl;
 }
 
 bool

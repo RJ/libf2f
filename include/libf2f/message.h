@@ -66,12 +66,10 @@ public:
         : m_payload(0)
     {
         m_header = header;
-        //std::cout << "CTOR Msg(" << m_guid << ")" << std::endl;
     }
     
     virtual ~Message()
     {
-        //std::cout << "DTOR Msg(" << m_guid << ")" << std::endl;
     }
     
     virtual const boost::uint32_t total_length() const 
