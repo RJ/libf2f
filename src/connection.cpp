@@ -7,7 +7,7 @@ namespace libf2f {
 using namespace std;
 
 Connection::Connection( const boost::asio::any_io_executor& executor, Router * r )
-    : m_socket(executor), 
+    : m_socket(executor),
       m_ready(false),
       m_sending(false),
       m_shuttingdown(false),
@@ -20,14 +20,14 @@ Connection::~Connection()
 {
 }
 
-void 
+void
 Connection::close()
 {
     m_ready = false;
     socket().close();
 }
 
-void 
+void
 Connection::fin()
 {
     if( m_shuttingdown ) return;
@@ -37,13 +37,13 @@ Connection::fin()
 }
 
 /// Get the underlying socket.
-boost::asio::ip::tcp::socket& 
+boost::asio::ip::tcp::socket&
 Connection::socket()
 {
     return m_socket;
 }
 
-void 
+void
 Connection::async_write(message_ptr msg)
 {
     {
@@ -58,23 +58,23 @@ Connection::async_write(message_ptr msg)
 
 /// Reading incoming messages is a chain of 3 async methods:
 /// async_read() -> handle_read_headers() -> handle_read_data()
-void 
+void
 Connection::async_read()
 {
     if( m_shuttingdown ) return;
     message_ptr msgp(new Message());
     // Read exactly the number of bytes in a header
-    boost::asio::async_read(m_socket, 
-                            boost::asio::buffer((char*)&msgp->header(), 
+    boost::asio::async_read(m_socket,
+                            boost::asio::buffer((char*)&msgp->header(),
                                                 sizeof(message_header)),
                             boost::bind(&Connection::handle_read_header,
-                                        shared_from_this(), 
-                                        boost::asio::placeholders::error, 
+                                        shared_from_this(),
+                                        boost::asio::placeholders::error,
                                         msgp
                                         ));
 }
 /// called when we've read the header off the wire
-void 
+void
 Connection::handle_read_header(const boost::system::error_code& e, message_ptr msgp)
 {
     //cout << "handle_read_header" << endl;
@@ -85,7 +85,7 @@ Connection::handle_read_header(const boost::system::error_code& e, message_ptr m
         return;
     }
     // Start an asynchronous call to receive the payload data
-    assert( msgp->length() <= 16384 ); // 10K hard limit on payload size 
+    assert( msgp->length() <= 16384 ); // 10K hard limit on payload size
     // allocate space for payload, length taken from header:
     msgp->malloc_payload();
     // short-circuit if there is no payload
@@ -95,18 +95,18 @@ Connection::handle_read_header(const boost::system::error_code& e, message_ptr m
         return;
     }
     // read the payload data:
-    boost::asio::async_read(m_socket, 
-                            boost::asio::buffer(msgp->payload(), 
+    boost::asio::async_read(m_socket,
+                            boost::asio::buffer(msgp->payload(),
                                                 msgp->length()),
                             boost::bind(&Connection::handle_read_data,
-                                        shared_from_this(), 
+                                        shared_from_this(),
                                         boost::asio::placeholders::error,
                                         msgp
                                         ));
-    
+
 }
 /// called when we've read header and payload off the wire
-void 
+void
 Connection::handle_read_data(const boost::system::error_code& e, message_ptr msgp)
 {
     if( m_shuttingdown ) return;
@@ -119,14 +119,14 @@ Connection::handle_read_data(const boost::system::error_code& e, message_ptr msg
     // report that we received a new message
     if( m_message_received_cbs.empty() )
         m_router->message_received( msgp, shared_from_this() );
-    else 
+    else
         m_message_received_cbs.back()( msgp, shared_from_this() );
     // setup recv for next message:
     async_read();
 }
 
-std::string 
-Connection::str() const 
+std::string
+Connection::str() const
 {
     std::ostringstream os;
     os   << "[Connection: '"
@@ -145,13 +145,13 @@ Connection::str() const
 
 /// Calls to do_async_write are chained - it will call itself when a write
 /// completes, to send the next msg in the queue. Bails when none left.
-void 
+void
 Connection::do_async_write(const boost::system::error_code& e, message_ptr finished_msg)
 {
     if( m_shuttingdown ) return;
     if( e )
     {
-        cerr << "Error in libf2f::do_async_write, terminating connection: " 
+        cerr << "Error in libf2f::do_async_write, terminating connection: "
              << e.value() << ", " << e.message() << endl;
         fin();
         return;
@@ -165,22 +165,22 @@ Connection::do_async_write(const boost::system::error_code& e, message_ptr finis
             //cout << "bailing from do_async_write - already sending (sending=true)" << endl;
             return;
         }
-        
+
         if(m_writeq.empty())
         {
             //cout << "bailing from do_async_write, q empty (sending=false)" << endl;
             m_sending = false;
             return;
         }
-        
+
         msgp = m_writeq.front();
         m_writeq.pop_front();
         m_writeq_size -= msgp->total_length();
         m_sending = true;
     } // mutex scope
-    
+
     boost::asio::async_write( socket(), msgp->to_buffers(),
-                              boost::bind( &Connection::do_async_write, 
+                              boost::bind( &Connection::do_async_write,
                                            shared_from_this(),
                                            boost::asio::placeholders::error,
                                            msgp ) );
@@ -191,7 +191,7 @@ Connection::push_message_received_cb( boost::function< void(message_ptr, connect
 {
     m_message_received_cbs.push_back(cb);
 }
- 
+
 void
 Connection::pop_message_received_cb()
 {
@@ -199,4 +199,3 @@ Connection::pop_message_received_cb()
 }
 
 } //ns
-

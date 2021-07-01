@@ -67,39 +67,39 @@ public:
     {
         m_header = header;
     }
-    
+
     virtual ~Message()
     {
     }
-    
-    virtual const boost::uint32_t total_length() const 
+
+    virtual const boost::uint32_t total_length() const
     {
         return sizeof(message_header) + length();
     }
-    
+
     virtual const std::string str() const
     {
         std::ostringstream os;
-        os  << "[Msg type:" << (int)type() 
-            << " ttl:" << (int)ttl() 
+        os  << "[Msg type:" << (int)type()
+            << " ttl:" << (int)ttl()
             << " hops:" << (int)hops()
-            << " length:" << (int)length() 
+            << " length:" << (int)length()
             << " guid:" << guid() << "]";
         return os.str();
     }
-    
+
     virtual message_header& header() { return m_header; }
     virtual const char type() const { return m_header.type; }
     virtual const short ttl() const { return m_header.ttl; }
     virtual const short hops() const { return m_header.hops; }
     virtual const boost::uint32_t length() const { return ntohl(m_header.length); }
-    virtual const std::string& guid() const 
-    { 
+    virtual const std::string& guid() const
+    {
         if( m_guid.empty() )
         {
             m_guid = std::string(m_header.guid, 36);
         }
-        return m_guid; 
+        return m_guid;
     }
     // payload
     virtual const char * payload() const { return m_payload.get(); }
@@ -110,32 +110,32 @@ public:
         std::string s(m_payload.get(), length());
         return s;
     }
-    
+
     virtual size_t malloc_payload()
     {
         if( length() == 0 ) return 0;
         m_payload = std::make_unique<char[]>(length());
         return length();
     }
-    
+
     virtual const boost::asio::mutable_buffer payload_buffer() const
     {
         return boost::asio::buffer( m_payload.get(), length() );
     }
-    
+
     virtual std::vector<boost::asio::const_buffer> to_buffers() const
     {
         std::vector<boost::asio::const_buffer> buffers;
-        buffers.push_back( boost::asio::buffer( 
+        buffers.push_back( boost::asio::buffer(
                             (char*)&m_header, sizeof(message_header) ) );
         if(length())
         {
             buffers.push_back( boost::asio::buffer( m_payload.get(), length() ) );
         }
-        
+
         return buffers;
     }
-    
+
 protected:
     message_header m_header;
     mutable std::string m_guid;

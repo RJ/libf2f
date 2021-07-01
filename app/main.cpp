@@ -41,23 +41,23 @@ int main(int argc, char **argv)
         cout <<"Usage: " << argv[0] << " <port>" << endl;
         return 1;
     }
-    
+
     boost::asio::io_service ios;
-    
+
     DemoProtocol p;
     short port = atoi(argv[1]);
     cout << "Listening on port " << port << endl;
-    boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp( 
+    boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp(
         new boost::asio::ip::tcp::acceptor
             (ios, boost::asio::ip::tcp::endpoint(
-                            boost::asio::ip::tcp::v4(), 
+                            boost::asio::ip::tcp::v4(),
                             port)
-            ) 
+            )
     );
     Router r(accp, &p, boost::bind(&lame_uuid_gen));
-    
+
     boost::thread t( boost::bind(&iorun, &ios) );
-    
+
     string line;
     char b[255];
     while(true)
@@ -65,12 +65,12 @@ int main(int argc, char **argv)
         cout << "> " << flush;
         cin.getline(b,255);
         line = string(b);
-        
+
         if(line == "quit") break;
-        
+
         vector<string> parts;
         boost::split(parts,line,boost::is_any_of(" "));
-        
+
         if(parts[0] == "connect" && parts.size() == 3)
         {
             cout << "...." << endl;
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
             boost::asio::ip::tcp::endpoint ep(ipaddr, rp);
             r.connect_to_remote( ep );
         }
-        
+
         if(parts[0] == "pingall")
         {
             message_ptr ping = message_ptr(new PingMessage( r.gen_uuid() ));

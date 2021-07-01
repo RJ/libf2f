@@ -15,16 +15,16 @@ Protocol::new_incoming_connection( connection_ptr conn )
     return true;
 }
 
-void 
+void
 Protocol::new_outgoing_connection( connection_ptr conn )
 {
     cout << "Protocol::new_outgoing_connection " << conn->str() << endl;
 }
 
-void 
+void
 Protocol::message_received( message_ptr msgp, connection_ptr conn )
 {
-    cout << "Protocol::message_received " << conn->str() << endl 
+    cout << "Protocol::message_received " << conn->str() << endl
          << msgp->str() << endl;
 }
 

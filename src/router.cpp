@@ -26,7 +26,7 @@ Router::Router( boost::shared_ptr<boost::asio::ip::tcp::acceptor> accp,
     p->set_router( this );
     // Start an accept operation for a new connection.
     connection_ptr new_conn = new_connection();
-    
+
     m_acceptor->async_accept(new_conn->socket(),
         boost::bind(&Router::handle_accept, this,
         boost::asio::placeholders::error, new_conn));
@@ -38,8 +38,8 @@ Router::new_connection()
 {
     return connection_ptr( new Connection( m_acceptor->get_executor(), this ) );
 }
-                
-std::string 
+
+std::string
 Router::gen_uuid()
 {
     return m_uuidgen();
@@ -63,7 +63,7 @@ Router::connection_terminated( connection_ptr conn )
 }
 
 /// Handle completion of a accept operation.
-void 
+void
 Router::handle_accept(const boost::system::error_code& e, connection_ptr conn)
 {
     if(e)
@@ -84,10 +84,10 @@ Router::handle_accept(const boost::system::error_code& e, connection_ptr conn)
         register_connection( conn );
         conn->async_read();
     }
-    
+
     // Start an accept operation for a new connection.
     connection_ptr new_conn = new_connection();
-    
+
     m_acceptor->async_accept(new_conn->socket(),
         boost::bind(&Router::handle_accept, this,
             boost::asio::placeholders::error, new_conn));
@@ -128,7 +128,7 @@ Router::unregister_connection( connection_ptr conn )
     //cout << connections_str() << endl;
 }
 
-connection_ptr 
+connection_ptr
 Router::get_connection_by_name( const std::string &name )
 {
     vector<connection_ptr>::iterator it;
@@ -213,7 +213,7 @@ Router::connect_to_remote(boost::asio::ip::tcp::endpoint &endpoint, const map<st
 }
 
 /// Handle completion of a connect operation.
-void 
+void
 Router::handle_connect( const boost::system::error_code& e,
                         boost::asio::ip::tcp::endpoint &endpoint,
                         connection_ptr conn )
@@ -222,14 +222,14 @@ Router::handle_connect( const boost::system::error_code& e,
     {
         return;
     }
-    /// Successfully established connection. 
+    /// Successfully established connection.
     m_protocol->new_outgoing_connection( conn );
     register_connection( conn );
     conn->async_read(); // start read loop for this connection
 }
 
 /// apply fun to all connections
-void 
+void
 Router::foreach_conns( boost::function<void(connection_ptr)> fun )
 {
     boost::mutex::scoped_lock lk(m_connections_mutex);
@@ -241,7 +241,7 @@ Router::foreach_conns( boost::function<void(connection_ptr)> fun )
 
 
 
-void 
+void
 Router::foreach_conns_except( boost::function<void(connection_ptr)> fun, connection_ptr conn )
 {
     boost::mutex::scoped_lock lk(m_connections_mutex);
@@ -252,7 +252,7 @@ Router::foreach_conns_except( boost::function<void(connection_ptr)> fun, connect
     }
 }
 
-void 
+void
 Router::send_all( message_ptr msgp )
 {
     //foreach_conns( boost::bind(&Connection::async_write, _1, msgp) );

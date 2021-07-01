@@ -12,7 +12,7 @@ public:
     DemoProtocol()
     {
     }
-    
+
     virtual ~DemoProtocol()
     {
     }
@@ -20,7 +20,7 @@ public:
     /// called when a client connects to us
     virtual bool new_incoming_connection( connection_ptr conn )
     {
-        std::cout << "DemoProtocol::new_incoming_connection " 
+        std::cout << "DemoProtocol::new_incoming_connection "
                   << conn->str() << std::endl;
         return true; // returning false rejects the connection
     }
@@ -28,7 +28,7 @@ public:
     /// called when we opened a socket to a remote servent
     virtual void new_outgoing_connection( connection_ptr conn )
     {
-        std::cout << "DemoProtocol::new_outgoing_connection " 
+        std::cout << "DemoProtocol::new_outgoing_connection "
                   << conn->str() << std::endl;
     }
 
@@ -41,8 +41,8 @@ public:
     /// we received a msg from this connection
     virtual void message_received( message_ptr msgp, connection_ptr conn )
     {
-        std::cout << "DemoProtocol::message_received " 
-                  << conn->str() << std::endl 
+        std::cout << "DemoProtocol::message_received "
+                  << conn->str() << std::endl
                   << msgp->str() << std::endl;
         switch( msgp->type() )
         {
@@ -54,7 +54,7 @@ public:
                 std::cout << "Got a pong, yay!" << std::endl;
                 break;
             default:
-                std::cout << "Unhandled message type: " 
+                std::cout << "Unhandled message type: "
                           << msgp->type() << std::endl;
         }
     }
@@ -62,4 +62,3 @@ public:
 };
 
 #endif
-

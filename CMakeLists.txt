@@ -32,14 +32,14 @@ INCLUDE_DIRECTORIES(
 LINK_DIRECTORIES(
                     ${F2F_PATH}/lib
                     /usr/local/lib
-                ) 
+                )
 
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 INCLUDE(InstallRequiredSystemLibraries)
 
 IF(WIN32)
-	ADD_DEFINITIONS(/DNOMINMAX)
-	ADD_DEFINITIONS(/DWIN32_LEAN_AND_MEAN)
+    ADD_DEFINITIONS(/DNOMINMAX)
+    ADD_DEFINITIONS(/DWIN32_LEAN_AND_MEAN)
 ENDIF(WIN32)
 
 IF(NOT WIN32)
@@ -50,7 +50,7 @@ IF(NOT WIN32)
     ADD_DEFINITIONS(-fPIC)
     ADD_DEFINITIONS(-O2)
 ENDIF(NOT WIN32)
-                     
+
 ADD_LIBRARY( f2f STATIC
              ${SRC}/router.cpp
              ${SRC}/protocol.cpp
@@ -58,7 +58,7 @@ ADD_LIBRARY( f2f STATIC
            )
 
 SET_TARGET_PROPERTIES(  f2f PROPERTIES
-                        CMAKE_RUNTIME_OUTPUT_DIRECTORY "${F2F_PATH}/lib" 
+                        CMAKE_RUNTIME_OUTPUT_DIRECTORY "${F2F_PATH}/lib"
                      )
 
 ADD_EXECUTABLE( f2f-demo
@@ -66,13 +66,13 @@ ADD_EXECUTABLE( f2f-demo
               )
 
 TARGET_LINK_LIBRARIES( f2f
-					   ${Boost_LIBRARIES}	  # Boost license
-                     )
+    ${Boost_LIBRARIES}	  # Boost license
+    )
 
 TARGET_LINK_LIBRARIES( f2f-demo
-                       f2f
-					   ${Boost_LIBRARIES}	  # Boost license
-                     )
+    f2f
+    ${Boost_LIBRARIES}	  # Boost license
+    )
 
 INSTALL(TARGETS f2f ARCHIVE DESTINATION lib)
 INSTALL(TARGETS f2f-demo RUNTIME DESTINATION bin)
